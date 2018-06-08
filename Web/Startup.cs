@@ -1,6 +1,7 @@
+using ApplicationCore.Interfaces;
+using Infrastructure.Repository;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
@@ -27,6 +28,8 @@ namespace Web
             {
                 configuration.RootPath = "ClientApp/dist";
             });
+            
+            services.AddScoped<IUnityOfWork, UnitOfWork>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
