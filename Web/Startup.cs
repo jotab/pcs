@@ -1,7 +1,7 @@
-using ApplicationCore.Interfaces;
-using Infrastructure.Repository;
+using Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
@@ -28,8 +28,8 @@ namespace Web
             {
                 configuration.RootPath = "ClientApp/dist";
             });
-            
-            services.AddScoped<IUnityOfWork, UnitOfWork>();
+
+            RegisterServices(services);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -68,6 +68,11 @@ namespace Web
                     spa.UseAngularCliServer(npmScript: "start");
                 }
             });
+        }
+
+        private static void RegisterServices(IServiceCollection services)
+        {
+            ServicesDependencyInjector.RegisterServices(services);
         }
     }
 }
