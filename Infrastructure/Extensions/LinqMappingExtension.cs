@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using ApplicationCore.Interfaces;
 using Infrastructure.Exceptions;
 using Infrastructure.Helpers;
 using Infrastructure.Mapping;
@@ -10,6 +11,13 @@ namespace Infrastructure.Extensions
 {
     internal static class LinqMappingExtension
     {
+        public static IEnumerable<string> IncludeMemberNames<T>(this ISpecification<T> spec)
+        {
+            return spec.Includes
+                .Where(expression => expression.Body is MemberExpression)
+                .Select(expression => ((MemberExpression) expression.Body).Member.Name);
+        }
+
         public static ISqlCommandMapping LinqToSqlWhere<T>(this IEntityMapping mapping,
             Expression<Func<T, bool>> expression)
         {
@@ -73,6 +81,18 @@ namespace Infrastructure.Extensions
             }
 
             return mapping;
+        }
+
+        private static void GetIncludeMapping<T>(this Expression<Func<T, object>> expression)
+        {
+            switch (expression.Body)
+            {
+                case MemberExpression property:
+                    var propertyName = property.Member.Name;
+                    break;
+                default:
+                    throw new MehtodCallMappingException();
+            }
         }
 
         private static string GetExpressionOperator(this ExpressionType expressionType)

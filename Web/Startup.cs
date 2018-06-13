@@ -1,7 +1,6 @@
 using Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
@@ -24,10 +23,7 @@ namespace Web
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             // In production, the Angular files will be served from this directory
-            services.AddSpaStaticFiles(configuration =>
-            {
-                configuration.RootPath = "ClientApp/dist";
-            });
+            services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/dist"; });
 
             RegisterServices(services);
         }
@@ -49,12 +45,7 @@ namespace Web
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
 
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller}/{action=Index}/{id?}");
-            });
+            app.UseMvc(routes => { routes.MapRoute("default", "{controller}/{action=Index}/{id?}"); });
 
             app.UseSpa(spa =>
             {
@@ -70,9 +61,9 @@ namespace Web
             });
         }
 
-        private static void RegisterServices(IServiceCollection services)
+        private void RegisterServices(IServiceCollection services)
         {
-            ServicesDependencyInjector.RegisterServices(services);
+            ServicesDependencyInjector.RegisterServices(services, Configuration);
         }
     }
 }

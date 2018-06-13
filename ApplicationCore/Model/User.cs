@@ -1,15 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApplicationCore.Model
 {
-    [Table("PCS_USER")]
-    public class User
+    public class User : CoreEntity
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        public string UserName { get; set; }
+        public string NormalizedUserName { get; set; }
 
-        public string Name { get; set; }
+        [NotMapped] 
+        public ICollection<Role> Roles { get; set; }
     }
 }

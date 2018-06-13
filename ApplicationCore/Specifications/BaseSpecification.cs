@@ -26,7 +26,7 @@ namespace ApplicationCore.Specifications
             return this;
         }
 
-        protected virtual void Include(Expression<Func<T, object>> includeExpression)
+        public virtual void Include(Expression<Func<T, object>> includeExpression)
         {
             Includes.Add(includeExpression);
         }

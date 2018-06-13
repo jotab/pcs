@@ -2,7 +2,9 @@
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using ApplicationCore.Interfaces;
+using ApplicationCore.Interfaces.Repository;
 using ApplicationCore.Model;
+using Infrastructure.Mapping;
 using Microsoft.Extensions.Configuration;
 using Oracle.ManagedDataAccess.Client;
 
@@ -12,19 +14,14 @@ namespace Infrastructure.Repository
     public class UnitOfWork : IUnityOfWork
     {
         private readonly IConfiguration _configuration;
+        private readonly IMappingCache _mappingCache;
         private IDbConnection _connection;
         private IDbTransaction _transaction;
 
-        #region Repository fields
-
-        private IRepository<User> _useRepository;
-
-        #endregion
-
         #region Repository properties
 
-        public IRepository<User> UserRepository =>
-            _useRepository ?? (_useRepository = new Repository<User>(Connection));
+        public IUserRepository UserRepository => new UserRepository(Connection, _mappingCache);
+        public IRepository<Role> RoleRepository => new Repository<Role>(Connection, _mappingCache);
 
         #endregion
 
@@ -34,9 +31,7 @@ namespace Infrastructure.Repository
             {
                 if (_connection == null)
                 {
-                    var oracleConnection =
-                        new OracleConnection(_configuration.GetConnectionString("DefaultConnection"));
-                    _connection = oracleConnection;
+                    _connection = new OracleConnection(_configuration.GetConnectionString("DefaultConnection"));
                     _connection.Open();
                     _transaction = _connection.BeginTransaction();
                 }
@@ -49,9 +44,10 @@ namespace Infrastructure.Repository
             }
         }
 
-        public UnitOfWork(IConfiguration configuration)
+        public UnitOfWork(IConfiguration configuration, IMappingCache mappingCache)
         {
             _configuration = configuration;
+            _mappingCache = mappingCache;
         }
 
         public void Commit()

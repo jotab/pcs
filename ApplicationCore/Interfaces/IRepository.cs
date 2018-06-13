@@ -6,7 +6,7 @@ namespace ApplicationCore.Interfaces
 {
     public interface IRepository<T>
     {
-        T GetById(int id);
+        T GetById(Guid id);
         IEnumerable<T> List();
         IEnumerable<T> List(Expression<Func<T, bool>> expression);
         IEnumerable<T> List(ISpecification<T> spec);

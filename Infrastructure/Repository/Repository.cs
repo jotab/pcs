@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using ApplicationCore.Interfaces;
+using ApplicationCore.Model;
 using Dapper;
 using Infrastructure.Extensions;
 using Infrastructure.Helpers;
@@ -12,18 +14,18 @@ using Oracle.ManagedDataAccess.Client;
 
 namespace Infrastructure.Repository
 {
-    public class Repository<T> : IRepository<T> where T : class
+    public class Repository<T> : IRepository<T> where T : CoreEntity
     {
         private readonly IDbConnection _connection;
         internal readonly IEntityMapping Mapping;
 
-        public Repository(IDbConnection connection)
+        public Repository(IDbConnection connection, IMappingCache mappingCache)
         {
             _connection = connection;
-            Mapping = typeof(T).GetEntityMapping();
+            Mapping = mappingCache.GetEntityMap<T>();
         }
 
-        public T GetById(int id)
+        public T GetById(Guid id)
         {
             var command = Mapping.GetSelectSql();
             var pkProperty = Mapping.Pks.First();
@@ -47,7 +49,13 @@ namespace Infrastructure.Repository
 
         public IEnumerable<T> List(ISpecification<T> spec)
         {
-            return List(Mapping.LinqToSqlWhere(spec.Criteria));
+            var entityList = List(Mapping.LinqToSqlWhere(spec.Criteria));
+            if (spec.Includes.Any())
+            {
+                //TODO - Implement includes
+            }
+
+            return entityList;
         }
 
         public void Add(T entity)
@@ -64,13 +72,13 @@ namespace Infrastructure.Repository
                 oracleCmd.BindByName = true;
             }
 
-            var propertiesForCondition = Mapping.Pks.Any() ? Mapping.Pks : Mapping.Properties;
+            var propertiesForCondition = Mapping.Pks.Any() ? Mapping.Pks : Mapping.ValueProperties;
 
             foreach (var pk in propertiesForCondition)
             {
                 var parameter = command.CreateParameter();
                 parameter.ParameterName = pk.PropertyName;
-                parameter.Value = entity.GetPropertyValue(pk);
+                parameter.Value = Mapping.GetPropertyValue(pk);
                 command.Parameters.Add(parameter);
 
                 if (deleteSql.Contains(SqlTerm.Where))
@@ -108,7 +116,7 @@ namespace Infrastructure.Repository
                 oracleCmd.BindByName = true;
             }
 
-            foreach (var propertyMap in Mapping.Properties)
+            foreach (var propertyMap in Mapping.ValueProperties)
             {
                 if (propertyMap.IsDbGenerated)
                 {

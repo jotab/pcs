@@ -23,17 +23,16 @@ namespace Infrastructure.Extensions
             return type.GetAttributeValue((TableAttribute table) => table.Schema);
         }
 
-        private static IEnumerable<IPropertyMapping> GetPropertyMappings(this Type type)
+        private static IEnumerable<IPropertyMapping> GetPropertyMappings(this IReflect type)
         {
             var properties = type
-                .GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance)
-                .Where(info =>
-                    info.PropertyType.IsPrimitive || info.PropertyType.IsValueType ||
-                    info.PropertyType == typeof(string));
+                .GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance);
             return properties
                 .Where(property => property.GetAttributeValue((NotMappedAttribute key) => key) == null)
                 .Select(property =>
                     {
+                        var fk = property.GetAttributeValue((ForeignKeyAttribute key) => key);
+
                         var map = new PropertyMapping
                         {
                             PropertyName = property.Name,
@@ -42,7 +41,10 @@ namespace Infrastructure.Extensions
                             IsPk = property.GetAttributeValue((KeyAttribute key) => key) != null,
                             IsDbGenerated = property.GetAttributeValue((DatabaseGeneratedAttribute dbGenerated) =>
                                 dbGenerated.DatabaseGeneratedOption != DatabaseGeneratedOption.None),
-                            IsFk = property.GetAttributeValue((ForeignKeyAttribute key) => key) != null
+                            IsFk = fk != null,
+                            RelatedProperty = fk?.Name,
+                            IsNavigation = !IsValueProperty(property),
+                            PropertyInfo = property
                         };
 
                         return map;
@@ -50,14 +52,20 @@ namespace Infrastructure.Extensions
                 );
         }
 
+        private static bool IsValueProperty(PropertyInfo info)
+        {
+            return info.PropertyType.IsPrimitive || info.PropertyType.IsValueType ||
+                   info.PropertyType == typeof(string);
+        }
+
         public static object GetPropertyValue<T>(this T entity, IPropertyMapping propertyMap)
         {
-            return entity.GetType().GetProperty(propertyMap.PropertyName).GetValue(entity);
+            return propertyMap.PropertyInfo.GetValue(entity);
         }
 
         public static void SetPropertyValue<T>(this T entity, IPropertyMapping propertyMap, object value)
         {
-            entity.GetType().GetProperty(propertyMap.PropertyName).SetValue(entity, value);
+            propertyMap.PropertyInfo.SetValue(entity, value);
         }
 
         private static IEnumerable<string> GetColumnNames(this IEnumerable<IPropertyMapping> propertyMappings)
@@ -76,13 +84,14 @@ namespace Infrastructure.Extensions
                 propertyMapping.PropertyName.Equals(propertyName));
         }
 
-        public static IEntityMapping GetEntityMapping(this Type type)
+        public static IEntityMapping CreateEntityMapping(this Type type)
         {
             return new EntityMapping
             {
+                Name = type.Name,
                 TableName = type.GetTableName(),
                 Properties = type.GetPropertyMappings(),
-                Schema = type.GetSchemaName(),
+                Schema = type.GetSchemaName()
             };
         }
 
@@ -93,7 +102,7 @@ namespace Infrastructure.Extensions
         public static string GetSelectSql(this IEntityMapping mapping)
         {
             return
-                $"{SqlTerm.Select} {string.Join(",", mapping.Properties.GetColumnNames())} {SqlTerm.From} {mapping.TableName} ";
+                $"{SqlTerm.Select} {string.Join(",", mapping.ValueProperties.GetColumnNames())} {SqlTerm.From} {mapping.TableName} ";
         }
 
         public static string GetDeleteSql(this IEntityMapping mapping)
@@ -103,18 +112,17 @@ namespace Infrastructure.Extensions
 
         public static string GetInsertSql(this IEntityMapping mapping)
         {
-            var properties = mapping.Properties.Where(propertyMapping => !propertyMapping.IsDbGenerated).ToList();
+            var properties = mapping.ValueProperties.Where(propertyMapping => !propertyMapping.IsDbGenerated).ToList();
             return
                 $"{SqlTerm.Insert} {SqlTerm.Into} {mapping.TableName} ({string.Join(",", properties.GetColumnNames())}) {SqlTerm.Values} (:{string.Join(",", properties.GetPropertyNames())}) ";
         }
 
         public static string GetUpdateSql(this IEntityMapping mapping)
         {
-            var setStatements = mapping.Properties
+            var setStatements = mapping.ValueProperties
                 .Where(propertyMapping => !propertyMapping.IsDbGenerated && !propertyMapping.IsPk)
                 .Select(propertyMapping => $"{propertyMapping.ColumnName} = :{propertyMapping.PropertyName}");
-            var keyComparator = mapping.Properties
-                .Where(propertyMapping => propertyMapping.IsPk)
+            var keyComparator = mapping.Pks
                 .Select(propertyMapping => $"{propertyMapping.ColumnName} = :{propertyMapping.PropertyName}");
 
             return
