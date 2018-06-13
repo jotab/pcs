@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApplicationCore.Model
 {
+    [Table("PCS_USER")]
     public class User : CoreEntity
     {
         public string UserName { get; set; }

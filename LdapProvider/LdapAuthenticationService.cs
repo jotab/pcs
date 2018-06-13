@@ -17,7 +17,7 @@ namespace LdapProvider
 
         public bool ValidateCredentials(string usr, string pwd)
         {
-            using (var context = new PrincipalContext(ContextType.Domain, _configuration["Ldap:Domain"]))
+            using (var context = new PrincipalContext(ContextType.Domain, _configuration["Ldap:DomainName"]))
             {
                 //Username and password for authentication.
                 return context.ValidateCredentials(usr, pwd);

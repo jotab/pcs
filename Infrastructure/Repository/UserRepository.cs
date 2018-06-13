@@ -1,6 +1,10 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
 using ApplicationCore.Interfaces.Repository;
 using ApplicationCore.Model;
+using Dapper;
+using Infrastructure.Extensions;
+using Infrastructure.Helpers;
 using Infrastructure.Mapping;
 
 namespace Infrastructure.Repository
@@ -14,7 +18,16 @@ namespace Infrastructure.Repository
 
         public User FindByName(string userName)
         {
-            throw new System.NotImplementedException();
+            var userNameMapping = Mapping.GetPropertyByName(nameof(User.NormalizedUserName));
+
+            var select =
+                $"{Mapping.GetSelectSql()} {SqlTerm.Where} {userNameMapping.ColumnName} = :{userNameMapping.PropertyName}";
+            var parameters = new DynamicParameters();
+            parameters.Add($"@{userNameMapping.PropertyName}", userName);
+
+            var user = Connection.QuerySingleOrDefault<User>(@select, parameters);
+            user.Roles = new List<Role>();
+            return user;
         }
     }
 }

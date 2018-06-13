@@ -16,12 +16,12 @@ namespace Infrastructure.Repository
 {
     public class Repository<T> : IRepository<T> where T : CoreEntity
     {
-        private readonly IDbConnection _connection;
-        internal readonly IEntityMapping Mapping;
+        protected readonly IDbConnection Connection;
+        protected readonly IEntityMapping Mapping;
 
         public Repository(IDbConnection connection, IMappingCache mappingCache)
         {
-            _connection = connection;
+            Connection = connection;
             Mapping = mappingCache.GetEntityMap<T>();
         }
 
@@ -34,12 +34,12 @@ namespace Infrastructure.Repository
             command +=
                 $"{SqlTerm.Where} {pkProperty.ColumnName} = :{pkProperty.PropertyName} {SqlTerm.And} {SqlTerm.RowNum} = 1";
 
-            return _connection.QuerySingleOrDefault<T>(command, param);
+            return Connection.QuerySingleOrDefault<T>(command, param);
         }
 
         public IEnumerable<T> List()
         {
-            return _connection.Query<T>(Mapping.GetSelectSql());
+            return Connection.Query<T>(Mapping.GetSelectSql());
         }
 
         public IEnumerable<T> List(Expression<Func<T, bool>> expression)
@@ -66,7 +66,7 @@ namespace Infrastructure.Repository
         public void Delete(T entity)
         {
             var deleteSql = Mapping.GetDeleteSql();
-            var command = _connection.CreateCommand();
+            var command = Connection.CreateCommand();
             if (command is OracleCommand oracleCmd)
             {
                 oracleCmd.BindByName = true;
@@ -105,12 +105,12 @@ namespace Infrastructure.Repository
         {
             var command = string.Concat(Mapping.GetSelectSql(), cmdMapping.CommandText);
 
-            return _connection.Query<T>(command, cmdMapping.Parameters);
+            return Connection.Query<T>(command, cmdMapping.Parameters);
         }
 
         private void AddOrUpdate(T entity, string commandText)
         {
-            var command = _connection.CreateCommand();
+            var command = Connection.CreateCommand();
             if (command is OracleCommand oracleCmd)
             {
                 oracleCmd.BindByName = true;

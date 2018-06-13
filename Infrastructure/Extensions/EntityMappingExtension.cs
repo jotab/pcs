@@ -75,7 +75,7 @@ namespace Infrastructure.Extensions
 
         private static IEnumerable<string> GetPropertyNames(this IEnumerable<IPropertyMapping> propertyMappings)
         {
-            return propertyMappings.Select(mapping => mapping.PropertyName);
+            return propertyMappings.Select(mapping => $":{mapping.PropertyName}");
         }
 
         public static IPropertyMapping GetPropertyByName(this IEntityMapping mapping, string propertyName)
@@ -114,7 +114,7 @@ namespace Infrastructure.Extensions
         {
             var properties = mapping.ValueProperties.Where(propertyMapping => !propertyMapping.IsDbGenerated).ToList();
             return
-                $"{SqlTerm.Insert} {SqlTerm.Into} {mapping.TableName} ({string.Join(",", properties.GetColumnNames())}) {SqlTerm.Values} (:{string.Join(",", properties.GetPropertyNames())}) ";
+                $"{SqlTerm.Insert} {SqlTerm.Into} {mapping.TableName} ({string.Join(",", properties.GetColumnNames())}) {SqlTerm.Values} ({string.Join(",", properties.GetPropertyNames())}) ";
         }
 
         public static string GetUpdateSql(this IEntityMapping mapping)
