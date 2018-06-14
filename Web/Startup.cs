@@ -1,10 +1,14 @@
+using System;
 using Configuration;
+using Logger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using Web.Filters;
 
 namespace Web
@@ -34,8 +38,23 @@ namespace Web
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
+            loggerFactory.AddColoredConsoleLogger();
+            loggerFactory.AddColoredConsoleLogger(new ColoredConsoleLoggerConfiguration
+            {
+                LogLevel = LogLevel.Debug,
+                Color = ConsoleColor.Gray
+            });
+            loggerFactory.AddColoredConsoleLogger(c =>
+            {
+                c.LogLevel = LogLevel.Information;
+                c.Color = ConsoleColor.Blue;
+            });
+
+            //start logging to the console
+            var logger = loggerFactory.CreateLogger<ConsoleLogger>();
+            
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
